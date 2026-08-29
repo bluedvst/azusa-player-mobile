@@ -1,16 +1,17 @@
 name: APM iOS dev Build
 on:
-  push:
-    branches:
-      - ios-redesign
   schedule:
     - cron: '0 0 * * 1'
   workflow_dispatch:
-
 jobs:
+  checkLastCommit:
+    uses: ./.github/workflows/reuse-check-last-commit.yml
+
   buildIPA:
     runs-on: macos-26
     name: build IPA
+    needs: checkLastCommit
+    if: ${{ needs.checkLastCommit.outputs.is_new_commit }}
     permissions:
       contents: write
     steps:
@@ -35,12 +36,6 @@ jobs:
 
       - name: Build IPA
         uses: ./.github/composite-actions/build-ipa
-
-      - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: APM-IPA
-          path: ios/build/APM.ipa
 
       - name: Release
         uses: softprops/action-gh-release@v3
