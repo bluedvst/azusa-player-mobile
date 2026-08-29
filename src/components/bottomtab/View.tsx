@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNoxSetting } from '@stores/useApp';
 import NoxNativeBottomTab from './NoxNativeBottomTab';
 import NoxBottomTab from './NoxBottomTab';
+import { isIOS } from '@utils/RNUtils';
 
 export default function BottomTabView({
   navigation,
@@ -16,9 +17,12 @@ export default function BottomTabView({
   if (!(gestureMode || playerSetting.alwaysShowBottomTab)) {
     return <View style={{ height: insets.bottom }} />;
   }
-  return playerSetting.nativeBottomTab ? (
-    <NoxNativeBottomTab navigation={navigation} />
-  ) : (
-    <NoxBottomTab navigation={navigation} />
-  );
+
+  // iPhone should use the native bottom-tab implementation even when an old
+  // migrated preference selected the legacy Material-style bar.
+  if (isIOS || playerSetting.nativeBottomTab) {
+    return <NoxNativeBottomTab navigation={navigation} />;
+  }
+
+  return <NoxBottomTab navigation={navigation} />;
 }

@@ -17,31 +17,30 @@ export const PlayerControls: React.FC = () => {
     <View style={styles.container}>
       {'error' in playback ? (
         <PlaybackError error={playback.error.message} />
-      ) : (
-        <></>
-      )}
+      ) : null}
 
       <View style={styles.row}>
-        <PlayerModeButton />
-        <View style={styles.btnSpacer} />
+        <View style={styles.secondaryControl}>
+          <PlayerModeButton />
+        </View>
         <LottieButton
           src={require('@assets/lottie/skip-backwards.json')}
-          size={40}
+          size={34}
           onPress={performSkipToPrevious}
           strokes={['Line', 'Triange', 'Triange  2']}
-          style={{ backgroundColor: undefined }}
+          style={styles.transportButton}
         />
-        <View style={styles.btnSpacer} />
-        <PlayPauseButton />
-        <View style={styles.btnSpacer} />
+        <PlayPauseButton iconSize={56} />
         <LottieButton
           src={require('@assets/lottie/skip-forwards.json')}
-          size={40}
+          size={34}
           onPress={performSkipToNext}
           strokes={['Line', 'Triangle 1', 'Triangle 2']}
-          style={{ backgroundColor: undefined }}
+          style={styles.transportButton}
         />
-        <ThumbsUpButton />
+        <View style={styles.secondaryControl}>
+          <ThumbsUpButton />
+        </View>
       </View>
     </View>
   );
@@ -51,12 +50,24 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     flexDirection: 'column',
-    paddingBottom: 20,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   row: {
+    width: '100%',
+    maxWidth: 390,
+    alignSelf: 'center',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 2,
   },
-  btnSpacer: { width: 8 },
+  transportButton: {
+    backgroundColor: undefined,
+  },
+  secondaryControl: {
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

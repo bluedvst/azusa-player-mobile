@@ -2,9 +2,9 @@ import * as React from 'react';
 import {
   View,
   ScrollView,
-  Dimensions,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { LegendList } from '@legendapp/list/react-native';
 import { Image } from 'expo-image';
@@ -15,9 +15,9 @@ import { useNoxSetting } from '@stores/useApp';
 import usePlayback from '@hooks/usePlayback';
 import { NoxRoutes } from '@enums/Routes';
 import useNavigation from '@hooks/useNavigation';
-import { styles } from '../style';
 import { BiliMusicTid } from '@enums/MediaFetch';
 import { PaperText as Text } from '@components/commonui/ScaledText';
+import { isIOS } from '@utils/RNUtils';
 
 export interface BiliCatSongs {
   [key: number]: NoxMedia.Song[];
@@ -29,6 +29,17 @@ export interface BiliSongCardProp {
   totalSongs?: NoxMedia.Song[];
 }
 
+const useTabMetrics = () => {
+  const { width } = useWindowDimensions();
+  const horizontalPadding = isIOS ? 20 : 5;
+  const gap = isIOS ? 12 : 10;
+  const cardWidth = isIOS
+    ? Math.min(350, Math.max(292, width - horizontalPadding * 2 - 18))
+    : width * 0.8;
+
+  return { width, cardWidth, horizontalPadding, gap };
+};
+
 export const BiliSongCard = ({
   songs = [],
   title,
@@ -38,68 +49,86 @@ export const BiliSongCard = ({
   const playerStyle = useNoxSetting(state => state.playerStyle);
   const scroll = useNoxSetting(state => state.incSongListScrollCounter);
   const { playAsSearchList } = usePlayback();
-
-  const fontColor = playerStyle.colors.primary;
+  const { cardWidth } = useTabMetrics();
+  const visibleRows = Math.min(4, songs.length);
+  const cardHeight = visibleRows * 66 + (title ? 45 : 16);
 
   return (
     <View
       style={[
         style.cardContainer,
-        // max 4 items per list
-        { height: (Math.min(4, songs.length) * 390) / 4 },
+        {
+          width: cardWidth,
+          height: cardHeight,
+          backgroundColor: isIOS ? playerStyle.colors.surface : 'transparent',
+        },
       ]}
     >
-      {title && <Text style={{ fontSize: 20, color: fontColor }}>{title}</Text>}
+      {title && (
+        <Text
+          style={[style.cardTitle, { color: playerStyle.colors.onSurface }]}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+      )}
       <LegendList
-        estimatedItemSize={390}
+        estimatedItemSize={66}
         showsVerticalScrollIndicator={false}
         data={songs}
-        renderItem={({ item }) => (
-          <View style={style.padding}>
-            <TouchableOpacity
-              style={style.cardPressable}
-              onPress={() => {
-                navigationGlobal.navigate({
-                  route: NoxRoutes.PlayerHome,
-                  params: { screen: NoxRoutes.Playlist, pop: true },
-                });
-                playAsSearchList({
-                  songs: totalSongs ?? songs,
-                  song: item,
-                  // HACK: oh well.
-                }).then(() => setTimeout(scroll, 500));
-              }}
+        renderItem={({ item, index }) => (
+          <TouchableOpacity
+            activeOpacity={0.72}
+            style={style.cardPressable}
+            onPress={() => {
+              navigationGlobal.navigate({
+                route: NoxRoutes.PlayerHome,
+                params: { screen: NoxRoutes.Playlist, pop: true },
+              });
+              playAsSearchList({
+                songs: totalSongs ?? songs,
+                song: item,
+              }).then(() => setTimeout(scroll, 500));
+            }}
+          >
+            <Text
+              style={[
+                style.rankIndex,
+                { color: playerStyle.colors.onSurfaceVariant },
+              ]}
             >
-              <Image
-                style={style.cardThumbnail}
-                source={{ uri: item.cover, width: 140, height: 140 }}
-                contentFit="cover"
-              />
-              <View style={styles.flex}>
-                <Text
-                  style={{
-                    color: fontColor,
-                    paddingLeft: 5,
-                    flex: 1,
-                  }}
-                  variant="titleMedium"
-                  numberOfLines={2}
-                >
-                  {item.name}
-                </Text>
-                <Text
-                  style={{
-                    color: playerStyle.colors.secondary,
-                    paddingLeft: 5,
-                  }}
-                  variant="titleSmall"
-                  numberOfLines={1}
-                >
-                  {item.singer}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+              {index + 1}
+            </Text>
+            <Image
+              style={[
+                style.cardThumbnail,
+                { backgroundColor: playerStyle.colors.surfaceVariant },
+              ]}
+              source={{ uri: item.cover, width: 52, height: 52 }}
+              contentFit="cover"
+              transition={isIOS ? 160 : 0}
+            />
+            <View style={style.songMeta}>
+              <Text
+                style={[
+                  style.songTitle,
+                  { color: playerStyle.colors.onSurface },
+                ]}
+                numberOfLines={1}
+              >
+                {item.name}
+              </Text>
+              <Text
+                style={[
+                  style.songArtist,
+                  { color: playerStyle.colors.onSurfaceVariant },
+                ]}
+                numberOfLines={1}
+              >
+                {item.singer}
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -108,14 +137,28 @@ export const BiliSongCard = ({
 
 export const BiliSongCatsCard = ({ songs = {} }: { songs?: BiliCatSongs }) => {
   const { t } = useTranslation();
+  const playerStyle = useNoxSetting(state => state.playerStyle);
+  const { cardWidth, horizontalPadding, gap } = useTabMetrics();
 
   return (
-    <View>
-      <Text style={style.catContainer}>{t('BiliCategory.ranking')}</Text>
+    <View style={style.section}>
+      <Text
+        style={[
+          style.sectionTitle,
+          {
+            color: playerStyle.colors.onBackground,
+            paddingHorizontal: horizontalPadding,
+          },
+        ]}
+      >
+        {t('BiliCategory.ranking')}
+      </Text>
       <ScrollView
         horizontal
         disableIntervalMomentum
-        snapToInterval={Dimensions.get('window').width * 0.8}
+        snapToInterval={cardWidth + gap}
+        decelerationRate={isIOS ? 'fast' : 'normal'}
+        contentContainerStyle={{ paddingHorizontal: horizontalPadding, gap }}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
@@ -126,7 +169,6 @@ export const BiliSongCatsCard = ({ songs = {} }: { songs?: BiliCatSongs }) => {
             songs={songs[Number(k)]}
           />
         ))}
-        <View style={style.paddingVertical}></View>
       </ScrollView>
     </View>
   );
@@ -139,6 +181,9 @@ export const BiliSongsArrayTabCard = ({
   songs?: NoxMedia.Song[];
   title: string;
 }) => {
+  const playerStyle = useNoxSetting(state => state.playerStyle);
+  const { cardWidth, horizontalPadding, gap } = useTabMetrics();
+
   if (songs.length === 0) {
     return <></>;
   }
@@ -146,12 +191,24 @@ export const BiliSongsArrayTabCard = ({
   const splicedSongs: NoxMedia.Song[][] = chunkArray(songs, 4);
 
   return (
-    <View>
-      <Text style={style.arrayText}>{title}</Text>
+    <View style={style.section}>
+      <Text
+        style={[
+          style.sectionTitle,
+          {
+            color: playerStyle.colors.onBackground,
+            paddingHorizontal: horizontalPadding,
+          },
+        ]}
+      >
+        {title}
+      </Text>
       <ScrollView
         horizontal
         disableIntervalMomentum
-        snapToInterval={Dimensions.get('window').width * 0.8}
+        snapToInterval={cardWidth + gap}
+        decelerationRate={isIOS ? 'fast' : 'normal'}
+        contentContainerStyle={{ paddingHorizontal: horizontalPadding, gap }}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
@@ -162,7 +219,6 @@ export const BiliSongsArrayTabCard = ({
             totalSongs={songs}
           />
         ))}
-        <View style={style.paddingVertical}></View>
       </ScrollView>
     </View>
   );
@@ -184,16 +240,60 @@ export const BiliSongsTabCard = ({
 };
 
 const style = StyleSheet.create({
-  cardContainer: {
-    width: Dimensions.get('window').width * 0.8,
-    height: 390,
-    paddingRight: 10,
-    paddingLeft: 5,
+  section: {
+    paddingBottom: 22,
   },
-  padding: { paddingVertical: 10 },
-  cardPressable: { height: 70, flexDirection: 'row' },
-  cardThumbnail: { width: 70, height: 70, borderRadius: 5 },
-  catContainer: { fontSize: 20, paddingLeft: 5, paddingBottom: 10 },
-  paddingVertical: { width: Dimensions.get('window').width * 0.2 },
-  arrayText: { fontSize: 20, paddingLeft: 5, paddingBottom: 0 },
+  sectionTitle: {
+    fontSize: 21,
+    lineHeight: 27,
+    fontWeight: '700',
+    letterSpacing: -0.35,
+    paddingBottom: 12,
+  },
+  cardContainer: {
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    overflow: 'hidden',
+  },
+  cardTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '700',
+    paddingHorizontal: 4,
+    paddingBottom: 7,
+  },
+  cardPressable: {
+    height: 66,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rankIndex: {
+    width: 24,
+    fontSize: 12.5,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+  },
+  cardThumbnail: {
+    width: 52,
+    height: 52,
+    borderRadius: 9,
+  },
+  songMeta: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 11,
+    paddingRight: 4,
+  },
+  songTitle: {
+    fontSize: 14.5,
+    lineHeight: 19,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+  },
+  songArtist: {
+    fontSize: 12.5,
+    lineHeight: 17,
+    paddingTop: 1,
+  },
 });

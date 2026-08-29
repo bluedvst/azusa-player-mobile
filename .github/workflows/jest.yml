@@ -29,3 +29,36 @@ jobs:
       - name: run tests
         run: |
           yarn test --runInBand
+
+  buildIPA:
+    runs-on: macos-26
+    name: build IPA
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: React Native Build Setup
+        uses: ./.github/composite-actions/RN-setup
+        with:
+          env: ${{ secrets.ENV_FILE }}
+          env_local: ${{ secrets.ENV_LOCAL_FILE }}
+          sentry: ${{ secrets.SENTRY_PROPERTIES }}
+
+      - name: 'Create env file'
+        run: |
+          echo "APPSTORE=true" >> .env
+
+      - name: python fixHTTP
+        run: |
+          python ./scripts/release_bump.py --dev
+
+      - name: Build IPA
+        uses: ./.github/composite-actions/build-ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: APM-IPA
+          path: ios/build/APM.ipa

@@ -12,6 +12,7 @@ import { useAPM } from '@stores/usePersistStore';
 import FlexView from '@components/commonui/FlexViewNewArch';
 import AutoUnmountNavView from '../commonui/AutoUnmountNavView';
 import { useIsLandscape } from '@hooks/useOrientation';
+import { isIOS } from '@utils/RNUtils';
 
 const LoginComponent = ({ loginSite }: { loginSite: Site }) => {
   switch (loginSite) {
@@ -34,11 +35,13 @@ const Explore = () => {
     <FlexView noFlex mkey={'explore'}>
       <SiteSelector
         containerStyle={{
-          backgroundColor: playerStyle.customColors.maskedBackgroundColor,
+          backgroundColor: isIOS
+            ? playerStyle.colors.background
+            : playerStyle.customColors.maskedBackgroundColor,
           flex: 1,
           paddingTop: isLandscape ? 0 : insets.top,
         }}
-        iconSize={30}
+        iconSize={isIOS ? 24 : 30}
         iconTabStyle={styles.iconTab}
         LoginComponent={LoginComponent}
         defaultSite={explorePage}
@@ -57,11 +60,9 @@ export default function ExploreView() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   iconTab: {
-    paddingTop: 5,
     flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -27,7 +27,7 @@ interface Props {
   windowHeight?: number;
   onImagePress?: () => void;
   children?: React.JSX.Element;
-  containerStyle?: ViewStyle;
+  containerStyle?: StyleProp<ViewStyle>;
 }
 const AlbumArt = ({
   track,

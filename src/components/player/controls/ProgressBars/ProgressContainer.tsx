@@ -8,7 +8,7 @@ import NativeProgressBarAPM from './NativeProgressBar';
 import NativeProgressFetchBar from './NativeProgressFetchBar';
 import MD3NativeProgressBar from './MD3NativeProgressBar';
 import { useNoxSetting } from '@stores/useApp';
-import { isAndroid } from '@utils/RNUtils';
+import { isAndroid, isIOS } from '@utils/RNUtils';
 import { ProgressBarContainerProps } from './ProgressBarProps';
 
 const Progress = (p: ProgressBarContainerProps) => (
@@ -23,7 +23,7 @@ const NativeProgress = (p: ProgressBarContainerProps) => (
     style={
       isAndroid
         ? styles.progressContainerAndroidNative
-        : styles.progressContainer
+        : styles.progressContainerIOS
     }
   >
     <NativeProgressBarAPM {...p} />
@@ -33,9 +33,17 @@ const NativeProgress = (p: ProgressBarContainerProps) => (
 
 export default function ProgressContainer(p: ProgressBarContainerProps) {
   const playerSetting = useNoxSetting(state => state.playerSetting);
+
   if (playerSetting.md3slider && playerSetting.nativeBottomTab && isAndroid) {
     return <MD3NativeProgressBar {...p} />;
   }
+
+  // The platform slider has the correct tap-to-seek and gesture behaviour on
+  // iPhone, so do not carry the legacy themed/wavy seek bar into the iOS skin.
+  if (isIOS) {
+    return <NativeProgress {...p} />;
+  }
+
   return (
     <View>
       <ProgressWavy />
@@ -51,9 +59,12 @@ export default function ProgressContainer(p: ProgressBarContainerProps) {
 const styles = StyleSheet.create({
   progressContainer: {
     width: '100%',
-    // for android native bar, set this to 0
     paddingHorizontal: 25,
     marginTop: -22,
+  },
+  progressContainerIOS: {
+    width: '100%',
+    marginTop: -8,
   },
   progressContainerAndroidNative: {
     width: '100%',

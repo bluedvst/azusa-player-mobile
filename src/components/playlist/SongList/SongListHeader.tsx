@@ -3,7 +3,6 @@ import { View, BackHandler, StyleSheet } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { styles } from '@components/style';
 import { useNoxSetting } from '@stores/useApp';
 import PlaylistInfo from '../Info/PlaylistInfo';
 import PlaylistMenuButton from '../Menu/PlaylistMenuButton';
@@ -31,54 +30,89 @@ export default function SongListHeader({ usedPlaylist }: Props) {
         'hardwareBackPress',
         onBackPress,
       );
-
       return () => subscription.remove();
-    }, [checking, setChecking, searching, setSearching]),
+    }, [checking, onBackPress, searching, setChecking, setSearching]),
   );
 
-  const btnContainColor =
-    playerStyle.colors.primaryContainer ??
+  const activeColor =
+    playerStyle.colors.secondaryContainer ??
     playerStyle.customColors.playlistDrawerBackgroundColor;
 
+  const iconColor = playerStyle.colors.onSurface;
+
   return (
-    <View style={[styles.topBarContainer, { top: 10 }]}>
-      <PlaylistInfo
-        onPressed={() => scrollTo({ viewPosition: 0.5 })}
-        usePlaylist={usedPlaylist}
-      />
-      <View style={stylesLocal.container}>
+    <View style={styles.header}>
+      <View style={styles.playlistInfo}>
+        <PlaylistInfo
+          onPressed={() => scrollTo({ viewPosition: 0.5 })}
+          usePlaylist={usedPlaylist}
+        />
+      </View>
+      <View style={styles.actions}>
         {checking && (
           <IconButton
             icon="select-all"
             onPress={toggleSelectedAll}
-            size={25}
-            //iconColor={playerStyle.colors.primary}
+            size={21}
+            iconColor={iconColor}
+            style={styles.actionButton}
           />
         )}
         <IconButton
-          icon="select"
+          icon="check-circle-outline"
           onPress={() => setChecking(val => !val)}
-          size={25}
-          containerColor={checking ? btnContainColor : undefined}
-          //iconColor={playerStyle.colors.primary}
+          size={21}
+          iconColor={iconColor}
+          style={styles.actionButton}
+          containerColor={checking ? activeColor : undefined}
         />
         <IconButton
           icon="magnify"
           onPress={() => setSearching(val => !val)}
-          size={25}
-          mode={searching ? 'contained' : undefined}
-          containerColor={searching ? btnContainColor : undefined}
-          //iconColor={playerStyle.colors.primary}
+          size={22}
+          iconColor={iconColor}
+          style={styles.actionButton}
+          mode={searching ? 'contained-tonal' : undefined}
+          containerColor={searching ? activeColor : undefined}
         />
-        <PlaylistMenuButton disabled={checking} />
+        <View style={styles.menuButton}>
+          <PlaylistMenuButton disabled={checking} />
+        </View>
       </View>
     </View>
   );
 }
-const stylesLocal = StyleSheet.create({
-  container: {
+
+const styles = StyleSheet.create({
+  header: {
+    width: '100%',
+    minHeight: 52,
     flexDirection: 'row',
-    bottom: 5,
+    alignItems: 'center',
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 4,
+  },
+  playlistInfo: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-end',
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
+    margin: 0,
+    borderRadius: 12,
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -36,16 +36,15 @@ const AnimatedCheckedOpacity = ({
   children,
 }: AnimatedCheckedOpacityProps) => {
   const selectedOpacity = useSharedValue(0);
-  const selectedOpacityAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      backgroundColor: `rgba(25, 25, 25, ${Math.round(selectedOpacity.value * 100) / 100})`,
-    };
-  });
+  const selectedOpacityAnimatedStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(25, 25, 25, ${Math.round(selectedOpacity.value * 100) / 100})`,
+  }));
+
   React.useEffect(() => {
     if (checking) {
-      selectedOpacity.value = withTiming(checked ? 0.5 : 0, { duration: 200 });
+      selectedOpacity.value = withTiming(checked ? 0.28 : 0, { duration: 160 });
     } else {
-      selectedOpacity.value = withTiming(0, { duration: 200 });
+      selectedOpacity.value = withTiming(0, { duration: 160 });
     }
   }, [checked, checking]);
 
@@ -77,9 +76,7 @@ const isItemSolid = (
 ) => {
   if (item.liveStatus !== undefined) return item.liveStatus;
   if (!networkCellular) return true;
-  if (dataSaver && !NoxCache.noxMediaCache?.peekCache(item)) {
-    return false;
-  }
+  if (dataSaver && !NoxCache.noxMediaCache?.peekCache(item)) return false;
   return true;
 };
 
@@ -109,7 +106,6 @@ const SongInfo = ({
       ? item.parsedName
       : item.name;
   const id = item.id;
-
   const [, setChecked] = React.useState(false);
 
   const toggleCheck = React.useMemo(
@@ -122,9 +118,7 @@ const SongInfo = ({
   );
 
   const dragToggleCheck = (min: number, max: number) => {
-    if (inRange(getLayoutY(index), min, max)) {
-      toggleCheck();
-    }
+    if (inRange(getLayoutY(index), min, max)) toggleCheck();
   };
 
   useAnimatedReaction(
@@ -135,25 +129,25 @@ const SongInfo = ({
     },
   );
 
-  const getSongIndex = () => {
-    // HACK: :index is no longer reliable because currentRow may filter view.
-    // either make filtered view a global state, or do this every time.
-    // which I dont think its terribly bad?
-    return currentPlaylist.songList.findIndex(song => song.id === id);
-  };
+  const getSongIndex = () =>
+    currentPlaylist.songList.findIndex(song => song.id === id);
   const checked = selected[getSongIndex()];
+
+  const activeBackground =
+    playerStyle.colors.secondaryContainer ?? 'rgba(103, 80, 164, 0.16)';
 
   return (
     <View
       testID={testID}
-      style={{
-        backgroundColor: currentPlaying
-          ? 'rgba(103, 80, 164, 0.35)'
-          : 'transparent',
-        opacity: isItemSolid(item, networkCellular, playerSetting.dataSaver)
-          ? undefined
-          : 0.5,
-      }}
+      style={[
+        styles.outer,
+        { backgroundColor: currentPlaying ? activeBackground : 'transparent' },
+        {
+          opacity: isItemSolid(item, networkCellular, playerSetting.dataSaver)
+            ? 1
+            : 0.5,
+        },
+      ]}
     >
       <AnimatedCheckedOpacity checked={checked} checking={checking}>
         <RectButton
@@ -161,49 +155,74 @@ const SongInfo = ({
           onLongPress={checking ? toggleCheck : onLongPress}
           onPress={checking ? toggleCheck : () => playSong(item)}
         >
-          <View style={styles.row}>
-            <View style={styles.songDetails}>
-              <View style={styles.row}>
-                {checking && (
-                  <View style={styles.checkBox}>
-                    <Pressable onPress={toggleCheck}>
-                      <Checkbox
-                        status={checked ? 'checked' : 'unchecked'}
-                        onPress={() => {}}
-                      />
-                    </Pressable>
-                  </View>
-                )}
-                <View style={styles.songTitle}>
-                  <Text
-                    style={{}}
-                    variant="bodyLarge"
-                    numberOfLines={3}
-                  >{`${String(index + 1)}. ${title}`}</Text>
-                  <Text
-                    variant="bodySmall"
-                    style={{ color: playerStyle.colors.onSurfaceVariant }}
-                    numberOfLines={1}
-                  >
-                    {getArtistName(item)}
-                  </Text>
-                </View>
-              </View>
+          {checking ? (
+            <View style={styles.checkBox}>
+              <Pressable onPress={toggleCheck}>
+                <Checkbox
+                  status={checked ? 'checked' : 'unchecked'}
+                  onPress={() => {}}
+                />
+              </Pressable>
             </View>
-            <View style={styles.row}>
-              <Text variant="titleSmall" style={styles.time}>
-                {seconds2MMSS(item.duration)}
-              </Text>
-              <IconButton
-                icon="dots-vertical"
-                size={20}
-                onPress={() => {
-                  setSongMenuSongIndexes([getSongIndex()]);
-                  TrueSheet.present(NoxSheetRoutes.SongsMenuInListSheet);
-                }}
-              />
-            </View>
+          ) : (
+            <Text
+              style={[
+                styles.index,
+                {
+                  color: currentPlaying
+                    ? playerStyle.colors.primary
+                    : playerStyle.colors.onSurfaceVariant,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {index + 1}
+            </Text>
+          )}
+
+          <View style={styles.songText}>
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.title,
+                {
+                  color: currentPlaying
+                    ? playerStyle.colors.primary
+                    : playerStyle.colors.onSurface,
+                },
+              ]}
+            >
+              {title}
+            </Text>
+            <Text
+              style={[
+                styles.artist,
+                { color: playerStyle.colors.onSurfaceVariant },
+              ]}
+              numberOfLines={1}
+            >
+              {getArtistName(item)}
+            </Text>
           </View>
+
+          <Text
+            style={[
+              styles.time,
+              { color: playerStyle.colors.onSurfaceVariant },
+            ]}
+            numberOfLines={1}
+          >
+            {seconds2MMSS(item.duration)}
+          </Text>
+          <IconButton
+            icon="dots-horizontal"
+            size={20}
+            style={styles.menuButton}
+            onPress={() => {
+              setSongMenuSongIndexes([getSongIndex()]);
+              TrueSheet.present(NoxSheetRoutes.SongsMenuInListSheet);
+            }}
+          />
         </RectButton>
       </AnimatedCheckedOpacity>
     </View>
@@ -211,26 +230,65 @@ const SongInfo = ({
 };
 
 const styles = StyleSheet.create({
+  outer: {
+    marginHorizontal: 12,
+    marginVertical: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   container: {
-    paddingTop: 5,
-    paddingBottom: 5,
-    borderRadius: 5,
-    paddingLeft: 10,
-  },
-  row: {
+    minHeight: 60,
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 8,
+    paddingRight: 2,
+    paddingVertical: 6,
   },
-  time: {
-    top: 13,
-  },
-  songTitle: {
-    flex: 4.9,
-    paddingRight: 5,
+  index: {
+    width: 32,
+    textAlign: 'center',
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
   },
   checkBox: {
-    flex: 1,
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  songDetails: { flex: 5 },
+  songText: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingLeft: 4,
+    paddingRight: 8,
+  },
+  title: {
+    fontSize: 15.5,
+    lineHeight: 20,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+  },
+  artist: {
+    marginTop: 2,
+    fontSize: 12.5,
+    lineHeight: 17,
+    fontWeight: '400',
+  },
+  time: {
+    minWidth: 42,
+    textAlign: 'right',
+    fontSize: 11.5,
+    lineHeight: 16,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+  },
+  menuButton: {
+    width: 40,
+    height: 44,
+    margin: 0,
+  },
 });
 
 export default SongInfo;

@@ -17,6 +17,7 @@ import { BottomTabRouteIcons as RouteIcons } from '@enums/BottomTab';
 import useNavigation from '@hooks/useNavigation';
 import FlexView from '../commonui/FlexViewNewArch';
 import useDrawerStatus from '@hooks/useDrawerStatus';
+import { isIOS } from '@utils/RNUtils';
 
 interface Props {
   view: NoxRoutes;
@@ -25,6 +26,7 @@ interface Props {
   text: string;
   navigation: DrawerNavigationHelpers;
 }
+
 const RenderDrawerItem = ({
   view,
   icon,
@@ -38,6 +40,7 @@ const RenderDrawerItem = ({
 
   return (
     <RectButton
+      style={isIOS ? styles.drawerButtonIOS : undefined}
       onPress={() =>
         noxNavigation.navigate({
           route: view,
@@ -45,14 +48,27 @@ const RenderDrawerItem = ({
         })
       }
     >
-      <View style={styles.drawerItemContainer}>
+      <View
+        style={[
+          styles.drawerItemContainer,
+          isIOS && styles.drawerItemContainerIOS,
+        ]}
+      >
         <IconButton
           icon={icon}
-          size={32}
+          size={isIOS ? 21 : 32}
           iconColor={playerStyle.colors.primary}
+          style={isIOS ? styles.drawerIconIOS : undefined}
         />
         <View style={styles.drawerItemTextContainer}>
-          <Text variant="titleLarge">{t(text)}</Text>
+          <Text
+            style={[
+              isIOS && styles.drawerTextIOS,
+              { color: playerStyle.colors.onSurface },
+            ]}
+          >
+            {t(text)}
+          </Text>
         </View>
       </View>
     </RectButton>
@@ -92,7 +108,6 @@ export default function PlaylistsView({
       }
     }
 
-    // This event will be fired when the app is already open and the notification is clicked
     const subscription = Linking.addEventListener('url', deepLinkHandler);
 
     return () => {
@@ -102,9 +117,14 @@ export default function PlaylistsView({
 
   return (
     <FlexView mkey={'drawer'}>
-      <>
-        <View style={{ height: 10 + insets.top }} />
-        <BiliCard backgroundURI={playerStyle.biliGarbCard}>
+      <View
+        style={[
+          styles.content,
+          { backgroundColor: playerStyle.colors.background },
+        ]}
+      >
+        <View style={{ height: (isIOS ? 6 : 10) + insets.top }} />
+        <BiliCard backgroundURI={isIOS ? undefined : playerStyle.biliGarbCard}>
           <RenderDrawerItem
             icon={'home-outline'}
             view={NoxRoutes.PlayerHome}
@@ -114,38 +134,64 @@ export default function PlaylistsView({
           />
         </BiliCard>
         <RenderDrawerItem
-          icon={'compass'}
+          icon={'compass-outline'}
           view={NoxRoutes.Explore}
           text={'appDrawer.exploreScreenName'}
           routeIcon={RouteIcons.explore}
           navigation={navigation}
         />
         <RenderDrawerItem
-          icon={'cog'}
+          icon={'cog-outline'}
           view={NoxRoutes.Settings}
           text={'appDrawer.settingScreenName'}
           routeIcon={RouteIcons.setting}
           navigation={navigation}
         />
-        <Divider />
+        <Divider
+          style={[
+            isIOS && styles.dividerIOS,
+            { backgroundColor: playerStyle.colors.outlineVariant },
+          ]}
+        />
         <Playlists navigation={navigation} />
-      </>
+      </View>
     </FlexView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  topPadding: {
-    height: 10,
+  content: {
+    flex: 1,
   },
-  draggableFlatList: {},
-  bottomInfo: {
-    paddingBottom: 20,
+  drawerButtonIOS: {
+    marginHorizontal: 10,
+    marginVertical: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  bottomInfoText: {
-    textAlign: 'center',
+  drawerItemContainer: {
+    flexDirection: 'row',
   },
-  drawerItemContainer: { flexDirection: 'row' },
-  drawerItemTextContainer: { justifyContent: 'center' },
+  drawerItemContainerIOS: {
+    minHeight: 50,
+    alignItems: 'center',
+  },
+  drawerItemTextContainer: {
+    justifyContent: 'center',
+  },
+  drawerIconIOS: {
+    width: 42,
+    height: 42,
+    margin: 0,
+  },
+  drawerTextIOS: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  dividerIOS: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
 });

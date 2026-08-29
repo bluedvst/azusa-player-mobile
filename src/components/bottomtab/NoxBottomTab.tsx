@@ -14,16 +14,22 @@ import useNavigation from '@hooks/useNavigation';
 interface IconProps {
   icon: string;
   onPress: () => void;
+  tint: string;
 }
-const BottomIconButton = ({ icon, onPress }: IconProps) => {
+
+const BottomIconButton = ({ icon, onPress, tint }: IconProps) => {
+  const active = !icon.includes('outline');
   return (
-    <IconButton
-      mode={icon.includes('outline') ? undefined : 'contained'}
-      icon={icon}
-      style={styles.iconButton}
-      size={40}
-      onPress={onPress}
-    />
+    <View style={styles.iconSlot}>
+      <IconButton
+        mode={active ? 'contained-tonal' : undefined}
+        icon={icon}
+        iconColor={tint}
+        style={[styles.iconButton, active && styles.activeIconButton]}
+        size={24}
+        onPress={onPress}
+      />
+    </View>
   );
 };
 
@@ -51,24 +57,29 @@ const NoxBottomTab = ({ navigation }: NoxComponent.NavigationProps2) => {
   const renderIcon = (icon: RouteIcons) =>
     route === icon ? icon : `${icon}-outline`;
 
+  const surface =
+    playerStyle.colors.elevation?.level2 ?? playerStyle.colors.background;
+  const tint = playerStyle.colors.primary;
+
   return (
     <View
-      style={{
-        backgroundColor:
-          playerStyle.colors.elevation?.level5 ?? playerStyle.colors.background,
-      }}
+      style={[
+        styles.surface,
+        {
+          backgroundColor: surface,
+          borderTopColor: playerStyle.colors.outlineVariant ?? 'transparent',
+          paddingBottom: isLandscape ? 0 : insets.bottom,
+        },
+      ]}
     >
-      <View
-        style={[
-          styles.panel,
-          { paddingBottom: isLandscape ? 0 : insets.bottom },
-        ]}
-      >
+      <View style={styles.panel}>
         <BottomIconButton
+          tint={tint}
           icon={renderIcon(RouteIcons.playlist)}
           onPress={onDrawerPress}
         />
         <BottomIconButton
+          tint={tint}
           icon={renderIcon(RouteIcons.music)}
           onPress={() =>
             navigationG.navigate({
@@ -78,10 +89,12 @@ const NoxBottomTab = ({ navigation }: NoxComponent.NavigationProps2) => {
           }
         />
         <BottomIconButton
+          tint={tint}
           icon={renderIcon(RouteIcons.explore)}
           onPress={() => navigationG.navigate({ route: NoxRoutes.Explore })}
         />
         <BottomIconButton
+          tint={tint}
           icon={renderIcon(RouteIcons.setting)}
           onPress={() => navigationG.navigate({ route: NoxRoutes.Settings })}
         />
@@ -91,13 +104,30 @@ const NoxBottomTab = ({ navigation }: NoxComponent.NavigationProps2) => {
 };
 
 const styles = StyleSheet.create({
+  surface: {
+    width: '100%',
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   panel: {
+    height: 52,
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  iconSlot: {
+    flex: 1,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconButton: {
-    flex: 1,
-    borderRadius: 30,
-    marginVertical: 3,
+    width: 52,
+    height: 40,
+    margin: 0,
+    borderRadius: 14,
+  },
+  activeIconButton: {
+    borderRadius: 14,
   },
 });
 

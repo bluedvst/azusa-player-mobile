@@ -35,6 +35,7 @@ const searchSuggest = (option: SearchOptions | string) => {
 interface Props {
   onSearched: (val: NoxMedia.SearchPlaylist) => void;
 }
+
 export default function BiliSearchBar({ onSearched = console.log }: Props) {
   const { t } = useTranslation();
   const playerSetting = useNoxSetting(state => state.playerSetting);
@@ -48,7 +49,6 @@ export default function BiliSearchBar({ onSearched = console.log }: Props) {
   );
   const miniPlayerCollapse = useNoxSetting(state => state.collapse);
   const initialURL = useNoxSetting(state => state.initialURL);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sharedData, setSharedData] = useState<any>(null);
   const { playFromPlaylist } = usePlayback();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -78,9 +78,7 @@ export default function BiliSearchBar({ onSearched = console.log }: Props) {
     });
   };
 
-  const toggleVisible = () => {
-    setDialogOpen(val => !val);
-  };
+  const toggleVisible = () => setDialogOpen(val => !val);
 
   const handleExternalSearch = (data: string) => {
     navigationGlobal.navigate({
@@ -104,7 +102,6 @@ export default function BiliSearchBar({ onSearched = console.log }: Props) {
   const handleShare = useCallback((data?: string) => {
     if (data === sharedData || data === undefined) return;
     setSharedData(data);
-    // You can receive extra data from your custom Share View
     handleExternalSearch(data);
     setSearchVal(data);
   }, []);
@@ -115,7 +112,6 @@ export default function BiliSearchBar({ onSearched = console.log }: Props) {
   };
 
   useEffect(() => {
-    // Subscribe to any new links
     const subscription = Linking.addEventListener('url', ({ url }) => {
       if (url.startsWith('noxplayer://')) {
         return handleShare(url.slice(12));
@@ -123,10 +119,7 @@ export default function BiliSearchBar({ onSearched = console.log }: Props) {
         return handleExternalSearch(url).then(immediatelyPlay);
       }
     });
-
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -184,14 +177,24 @@ export default function BiliSearchBar({ onSearched = console.log }: Props) {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 60,
-    paddingHorizontal: 5,
-    paddingTop: 10,
+    minHeight: 56,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
   },
   searchContainer: {
     flexDirection: 'row',
     width: '100%',
   },
-  progressBar: { backgroundColor: 'rgba(0, 0, 0, 0)' },
-  hidden: { width: 0, position: 'absolute' },
+  progressBar: {
+    height: 2,
+    marginTop: 4,
+    marginHorizontal: 14,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0)',
+  },
+  hidden: {
+    width: 0,
+    position: 'absolute',
+  },
 });

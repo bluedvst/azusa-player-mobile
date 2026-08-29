@@ -5,6 +5,8 @@ import { IconButton } from 'react-native-paper';
 import { Site, Sites, SiteIcon } from '@enums/Network';
 import useCollapsable from './useCollapsable';
 import { Collapsable } from '@components/commonui/Collapsable';
+import { isIOS } from '@utils/RNUtils';
+import { useNoxSetting } from '@stores/useApp';
 
 interface Props {
   LoginComponent: (p: { loginSite: Site }) => JSX.Element;
@@ -27,8 +29,9 @@ export default function SiteSelector({
 }: Props) {
   const [loginSite, setLoginSite] = useState<Site>(defaultSite);
   const collapsed = useCollapsable(state => state.collapse);
+  const playerStyle = useNoxSetting(state => state.playerStyle);
   const opacityValue = (v: Site, toSite = loginSite) =>
-    toSite === v ? 1 : 0.2;
+    toSite === v ? 1 : isIOS ? 0.58 : 0.2;
 
   const bilibiliOpacity = useRef(
     new Animated.Value(opacityValue(Site.Bilibili)),
@@ -56,24 +59,39 @@ export default function SiteSelector({
       sites.map(site =>
         Animated.timing(getAnimatedOpacityRef(site), {
           toValue: opacityValue(site, v),
-          duration: 200,
+          duration: 180,
           useNativeDriver: true,
         }),
       ),
     ).start();
-    setLoginSite(v);
   };
+
+  const usedIconSize = isIOS ? Math.min(iconSize, 24) : iconSize;
 
   return (
     <View style={containerStyle}>
       <Collapsable collapsed={collapsed}>
-        <View style={iconTabStyle}>
+        <View
+          style={[
+            iconTabStyle,
+            isIOS && styles.iconTabIOS,
+            isIOS && {
+              backgroundColor:
+                playerStyle.colors.elevation?.level2 ??
+                playerStyle.colors.surfaceVariant,
+            },
+          ]}
+        >
           {sites.map(site => (
             <IconButton
               key={site}
-              style={{ opacity: getAnimatedOpacityRef(site) }}
-              icon={SiteIcon(site, iconSize)}
-              size={iconSize}
+              style={[
+                styles.iconButton,
+                { opacity: getAnimatedOpacityRef(site) },
+              ]}
+              mode={isIOS && loginSite === site ? 'contained-tonal' : undefined}
+              icon={SiteIcon(site, usedIconSize)}
+              size={usedIconSize}
               onPress={() => setLoginSiteAnimated(site)}
             />
           ))}
@@ -91,5 +109,21 @@ const styles = StyleSheet.create({
   iconTab: {
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  iconTabIOS: {
+    alignSelf: 'center',
+    minHeight: 44,
+    marginHorizontal: 16,
+    marginVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 15,
+    alignItems: 'center',
+  },
+  iconButton: {
+    width: 44,
+    height: 40,
+    marginHorizontal: 2,
+    marginVertical: 0,
+    borderRadius: 12,
   },
 });

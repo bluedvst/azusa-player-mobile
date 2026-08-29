@@ -1,13 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { IconButton } from 'react-native-paper';
 
 import { useNoxSetting } from '@stores/useApp';
 import { PaperListItem } from '@components/commonui/ScaledText';
-/**
- * renders a generic clickable item.
- */
+import { isIOS } from '@utils/RNUtils';
+
 interface Props {
   icon?: string | (() => React.JSX.Element);
   settingName: string;
@@ -29,28 +28,59 @@ const SettingListItem = ({
   const getIcon = () => {
     if (typeof icon === 'string') {
       return (
-        <IconButton
-          iconColor={playerStyle.colors.primary}
-          icon={icon}
-          size={40}
-        />
+        <View
+          style={[
+            styles.iconTile,
+            {
+              backgroundColor:
+                playerStyle.colors.secondaryContainer ??
+                playerStyle.colors.elevation?.level2,
+            },
+          ]}
+        >
+          <IconButton
+            iconColor={playerStyle.colors.primary}
+            icon={icon}
+            size={isIOS ? 20 : 28}
+            style={styles.icon}
+          />
+        </View>
       );
-    } else if (typeof icon === 'function') {
-      return icon();
-    } else {
-      return <></>;
     }
+    if (typeof icon === 'function') return icon();
+    return <></>;
   };
 
   return (
     <PaperListItem
       left={getIcon}
+      right={
+        isIOS
+          ? () => (
+              <IconButton
+                icon="chevron-right"
+                iconColor={playerStyle.colors.onSurfaceVariant}
+                size={20}
+                style={styles.chevron}
+              />
+            )
+          : undefined
+      }
       title={t(`${settingCategory}.${settingName}Name`)}
       description={modifyDescription(
         t(`${settingCategory}.${settingName}Desc`),
       )}
+      titleStyle={isIOS ? styles.titleIOS : undefined}
+      descriptionStyle={isIOS ? styles.descriptionIOS : undefined}
       onPress={onPress}
-      style={styles.listItem}
+      style={[
+        styles.listItem,
+        isIOS && styles.listItemIOS,
+        isIOS && {
+          backgroundColor:
+            playerStyle.colors.elevation?.level1 ?? playerStyle.colors.surface,
+        },
+      ]}
     />
   );
 };
@@ -60,5 +90,42 @@ export default SettingListItem;
 const styles = StyleSheet.create({
   listItem: {
     paddingVertical: 0,
+  },
+  listItemIOS: {
+    minHeight: 66,
+    marginHorizontal: 16,
+    marginVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+  },
+  iconTile: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  icon: {
+    width: 36,
+    height: 36,
+    margin: 0,
+  },
+  chevron: {
+    width: 32,
+    height: 44,
+    margin: 0,
+    alignSelf: 'center',
+  },
+  titleIOS: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+  },
+  descriptionIOS: {
+    marginTop: 1,
+    fontSize: 12.5,
+    lineHeight: 16,
   },
 });

@@ -4,6 +4,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNoxSetting } from '@stores/useApp';
 import { PaperText as Text } from '@components/commonui/ScaledText';
 import { IconButton } from '../commonui/RNGHPaperWrapper';
+import { isIOS } from '@utils/RNUtils';
 
 const DefaultIcon = (
   item: NoxMedia.Playlist,
@@ -14,10 +15,11 @@ const DefaultIcon = (
   return (
     <IconButton
       testID="playlist-item-delete-button"
-      icon="close"
+      icon={isIOS ? 'close-circle-outline' : 'close'}
       onPress={() => deleteCallback(item.id)}
-      size={25}
-      iconColor={playerStyle.colors.primary}
+      size={isIOS ? 19 : 25}
+      iconColor={playerStyle.colors.onSurfaceVariant}
+      style={isIOS ? styles.trailingButtonIOS : undefined}
     />
   );
 };
@@ -29,6 +31,7 @@ interface PlaylistItemProps {
   leadColor?: string;
   beginDrag?: () => void;
 }
+
 const PlaylistItem = ({
   item,
   icon,
@@ -37,22 +40,30 @@ const PlaylistItem = ({
   beginDrag,
 }: PlaylistItemProps) => {
   const currentPlayingList = useNoxSetting(state => state.currentPlayingList);
+  const playerStyle = useNoxSetting(state => state.playerStyle);
+  const isPlaying = currentPlayingList.id === item?.id;
 
   if (!item) return <></>;
+
   return (
-    <View style={styles.playlistItemContainer}>
+    <View style={[styles.playlistItemContainer, isIOS && styles.containerIOS]}>
       <TouchableOpacity
-        style={{ backgroundColor: leadColor, width: 15 }}
+        style={[
+          styles.dragHandle,
+          isIOS && styles.dragHandleIOS,
+          { backgroundColor: leadColor },
+        ]}
         onPressIn={beginDrag}
       />
       <View style={styles.playlistItemTextContainer}>
         <Text
-          variant="bodyLarge"
+          numberOfLines={1}
           style={[
+            styles.title,
+            isIOS && styles.titleIOS,
             {
-              fontWeight:
-                currentPlayingList.id === item?.id ? 'bold' : undefined,
-              paddingHorizontal: 10,
+              color: playerStyle.colors.onSurface,
+              fontWeight: isPlaying ? '700' : isIOS ? '500' : undefined,
             },
           ]}
         >
@@ -71,10 +82,45 @@ export default PlaylistItem;
 const styles = StyleSheet.create({
   playlistItemContainer: {
     flexDirection: 'row',
+    minHeight: 52,
+    alignItems: 'stretch',
+  },
+  containerIOS: {
+    minHeight: 54,
+    marginHorizontal: 10,
+    marginVertical: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  dragHandle: {
+    width: 15,
+  },
+  dragHandleIOS: {
+    width: 4,
+    marginVertical: 10,
+    marginLeft: 6,
+    borderRadius: 2,
   },
   playlistItemTextContainer: {
-    flex: 4,
+    flex: 1,
     justifyContent: 'center',
   },
-  playlistItemIconContainer: { alignItems: 'flex-end' },
+  title: {
+    paddingHorizontal: 10,
+  },
+  titleIOS: {
+    fontSize: 15.5,
+    lineHeight: 20,
+    paddingLeft: 10,
+    paddingRight: 8,
+  },
+  playlistItemIconContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  trailingButtonIOS: {
+    margin: 0,
+    width: 42,
+    height: 42,
+  },
 });

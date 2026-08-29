@@ -10,7 +10,6 @@ import {
   DefaultTheme as NavigationDefaultTheme,
 } from '@react-navigation/native';
 
-import AppOpenSplash from './components/background/AppOpenSplash';
 import useSetupPlayer from './hooks/useSetupPlayer';
 import { useIsLandscape } from './hooks/useOrientation';
 import appStore from '@stores/appStore';
@@ -29,6 +28,7 @@ import {
 } from './components/styles/Theme';
 import APMContext from './contexts/APMContext';
 import HookEmptyComponent from './HookEmptyComponent';
+import { isIOS } from '@utils/RNUtils';
 
 if (TRACKING) {
   Sentry.init({
@@ -42,33 +42,16 @@ if (TRACKING) {
       'no audio url',
       'com.google.android.play.core.appupdate.internal.zzy',
       'TEST - Sentry Client Crash',
-      // its ok to not track muse error i think
       /MuseError/,
     ],
   });
 }
 
-const useSplash = (duration = 1000) => {
-  const [isReady, setIsReady] = React.useState(false);
-  useEffect(() => {
-    // wait for 1000 ms and set isReady to true
-    setTimeout(() => {
-      setIsReady(true);
-    }, duration);
-  });
-  return isReady;
-};
-
 export default function App(appProps: NoxComponent.AppProps) {
   const { vip } = useSetupVIP();
-  const isSplashReady = useSplash(
-    __DEV__ || appProps.intentData || vip ? 1 : 2500,
-  );
-  const [isSplashAnimReady, setIsSplashAnimReady] = React.useState(vip);
   const isPlayerReady = useSetupPlayer({ ...appProps, vip });
   const isLandscape = useIsLandscape();
   const PIPMode = useStore(appStore, state => state.pipMode);
-  const initialURL = useNoxSetting(state => state.initialURL);
   const setInitialURL = useNoxSetting(state => state.setInitialURL);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const usedTheme = useTheme();
@@ -79,40 +62,36 @@ export default function App(appProps: NoxComponent.AppProps) {
   const defaultNavTheme = playerStyle.metaData.darkTheme
     ? NavigationDarkTheme
     : NavigationDefaultTheme;
+  const iosSurface = playerStyle.metaData.darkTheme ? '#000000' : '#F7F7FA';
+  const appBackground = isIOS ? iosSurface : playerStyle.colors.background;
 
   useEffect(() => {
     function deepLinkHandler(data: { url: string }) {
       console.log('deepLinkHandler', data.url);
     }
 
-    // This event will be fired when the app is already open and the notification is clicked
     const subscription = Linking.addEventListener('url', deepLinkHandler);
-
-    // When you launch the closed app from the notification or any other link
     Linking.getInitialURL().then(url => url && setInitialURL(url));
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+    return () => subscription.remove();
+  }, [setInitialURL]);
 
-  if (!(isPlayerReady && (initialURL || isSplashReady) && isSplashAnimReady)) {
+  if (!isPlayerReady) {
     return (
       <SafeAreaProvider>
-        <View style={styles.screenContainer}>
-          <AppOpenSplash setIsSplashReady={setIsSplashAnimReady} />
-        </View>
+        <View
+          style={[styles.launchContainer, { backgroundColor: appBackground }]}
+        />
       </SafeAreaProvider>
     );
   }
+
   return (
     <GestureHandlerRootView style={styles.gestureContainer}>
       <HookEmptyComponent />
       <SafeAreaProvider>
         <APMContext>
-          <MainBackground />
-          <View
-            style={{ backgroundColor: playerStyle.colors.background, flex: 1 }}
-          >
+          {!isIOS && <MainBackground />}
+          <View style={{ backgroundColor: appBackground, flex: 1 }}>
             <PaperProvider
               theme={{
                 ...defaultTheme,
@@ -136,10 +115,8 @@ export default function App(appProps: NoxComponent.AppProps) {
 }
 
 const styles = StyleSheet.create({
-  screenContainer: {
+  launchContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   gestureContainer: {
     flex: 1,

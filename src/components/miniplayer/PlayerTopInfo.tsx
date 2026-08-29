@@ -8,6 +8,8 @@ import { useNoxSetting } from '@stores/useApp';
 import RandomGIFButton from '../buttons/RandomGIF';
 import useNavigation from '@hooks/useNavigation';
 import { NoxRoutes } from '@enums/Routes';
+import { isIOS } from '@utils/RNUtils';
+import { NativeText as Text } from '@components/commonui/ScaledText';
 
 interface Props extends NoxComponent.OpacityProps {
   collapse: () => void;
@@ -17,11 +19,11 @@ export default function MiniplayerTopInfo({ opacity, collapse }: Props) {
   const insets = useSafeAreaInsets();
   const playerStyle = useNoxSetting(state => state.playerStyle);
   const currentPlayingId = useNoxSetting(state => state.currentPlayingId);
+  const currentPlayingList = useNoxSetting(state => state.currentPlayingList);
   const navigation = useNavigation();
   const scroll = useNoxSetting(state => state.incSongListScrollCounter);
   const getPlaylist = useNoxSetting(state => state.getPlaylist);
   const setCurrentPlaylist = useNoxSetting(state => state.setCurrentPlaylist);
-  const currentPlayingList = useNoxSetting(state => state.currentPlayingList);
 
   const onPressPlaylist = async () => {
     setCurrentPlaylist(await getPlaylist(currentPlayingList.id));
@@ -33,64 +35,94 @@ export default function MiniplayerTopInfo({ opacity, collapse }: Props) {
     collapse();
   };
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-      zIndex: opacity.value > 0 ? 1 : 0,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    zIndex: opacity.value > 0 ? 3 : 0,
+  }));
 
   return (
     <Animated.View
       style={[
-        styles.containerStyle,
-        playerStyle.playerTopBarContainer,
-        { position: 'absolute', paddingTop: insets.top },
+        styles.container,
+        {
+          top: insets.top + 2,
+          paddingHorizontal: 10,
+        },
         animatedStyle,
       ]}
     >
-      <View style={styles.iconButtonContainerStyle}>
-        <IconButton
-          testID="miniplayer-collapse"
-          icon="arrow-collapse"
-          size={40}
-          iconColor={playerStyle.colors.primary}
-          onPress={collapse}
-        />
-      </View>
+      <IconButton
+        testID="miniplayer-collapse"
+        icon={isIOS ? 'chevron-down' : 'arrow-collapse'}
+        size={26}
+        iconColor={playerStyle.colors.onSurface}
+        style={styles.iconButton}
+        onPress={collapse}
+      />
 
-      <View style={styles.randomGifButtonContainerStyle}>
-        <RandomGIFButton
-          gifs={playerStyle.gifs}
-          favList={String(currentPlayingId)}
-        />
-      </View>
-      <View style={styles.playlistIconButtonContainerStyle}>
-        <IconButton
-          testID="miniplayer-go2playlist"
-          icon="playlist-music"
-          size={40}
-          iconColor={playerStyle.colors.primary}
-          onPress={onPressPlaylist}
-        />
-      </View>
+      {isIOS ? (
+        <View style={styles.titleContainer} pointerEvents="none">
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.title,
+              { color: playerStyle.colors.onSurfaceVariant },
+            ]}
+          >
+            {currentPlayingList.title}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.randomGifButtonContainer}>
+          <RandomGIFButton
+            gifs={playerStyle.gifs}
+            favList={String(currentPlayingId)}
+          />
+        </View>
+      )}
+
+      <IconButton
+        testID="miniplayer-go2playlist"
+        icon="playlist-music"
+        size={25}
+        iconColor={playerStyle.colors.onSurface}
+        style={styles.iconButton}
+        onPress={onPressPlaylist}
+      />
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  iconButtonContainerStyle: {
-    alignContent: 'flex-start',
-  },
-  randomGifButtonContainerStyle: {
-    flex: 4,
-    alignContent: 'center',
+  container: {
+    position: 'absolute',
+    width: '100%',
+    height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  playlistIconButtonContainerStyle: {
-    alignContent: 'flex-end',
+  iconButton: {
+    width: 44,
+    height: 44,
+    margin: 0,
   },
-  containerStyle: {
+  titleContainer: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  title: {
+    maxWidth: '100%',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  randomGifButtonContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

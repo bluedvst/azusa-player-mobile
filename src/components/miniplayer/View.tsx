@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Dimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -22,15 +22,20 @@ import Lrc from './Lrc';
 import ProgressBar from './ProgressBar';
 import { useNoxSetting } from '@stores/useApp';
 import { useMiniplayerHeight } from '@contexts/MiniPlayerHeightContext';
+import { getIPhonePlayerMetrics } from '@components/ios/iPhoneLayout';
 
-const SnapToRatio = 0.15;
+const SnapToRatio = 0.12;
 
 export default function MiniplayerView() {
   const [lrcVisible, setLrcVisible] = React.useState(false);
   const insets = useSafeAreaInsets();
-  const dim = Dimensions.get('window');
-  const width = dim.width;
-  const height = dim.height + insets.top + insets.bottom;
+  const { width, height } = useWindowDimensions();
+  const metrics = getIPhonePlayerMetrics({
+    width,
+    height,
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+  });
   const miniplayerHeight = useMiniplayerHeight();
   const artworkOpacity = useSharedValue(1);
   const initHeight = useSharedValue(0);
@@ -42,15 +47,18 @@ export default function MiniplayerView() {
   const sliding = useNoxSetting(state => state.miniProgressSliding);
 
   const opacityVisible = useDerivedValue(() => {
-    const opacityLevel = width + 50;
-    if (miniplayerHeight.value > opacityLevel) {
-      return Math.min(
-        1,
-        ((miniplayerHeight.value - opacityLevel) / (height - width)) * 2,
-      );
-    }
-    return 0;
-  });
+    const revealStart = Math.max(
+      MinPlayerHeight * 2,
+      metrics.artworkTop + metrics.artworkSize * 0.55,
+    );
+    if (miniplayerHeight.value <= revealStart) return 0;
+    return Math.min(
+      1,
+      ((miniplayerHeight.value - revealStart) /
+        Math.max(1, height - revealStart)) *
+        2.2,
+    );
+  }, [height, metrics.artworkSize, metrics.artworkTop]);
 
   const lrcOpacity = useDerivedValue(() => 1 - artworkOpacity.value);
 
@@ -64,27 +72,23 @@ export default function MiniplayerView() {
     'worklet';
     miniplayerHeight.value = animation
       ? withTiming(toHeight, {
-          duration: 250,
-          easing: Easing.out(Easing.exp),
+          duration: 280,
+          easing: Easing.out(Easing.cubic),
         })
       : toHeight;
-    artworkOpacity.value = withTiming(1);
+    artworkOpacity.value = withTiming(1, { duration: 180 });
   };
 
   const expand = (animation = true, toHeight = -1) => {
     'worklet';
-    if (toHeight === -1) {
-      toHeight = height;
-    }
+    if (toHeight === -1) toHeight = height;
     transitionHeight(toHeight, animation);
     scheduleOnRN(setLrcVisible, false);
   };
 
   const collapse = (animation = true, toHeight = -1) => {
     'worklet';
-    if (toHeight === -1) {
-      toHeight = MinPlayerHeight;
-    }
+    if (toHeight === -1) toHeight = MinPlayerHeight;
     transitionHeight(toHeight, animation);
     scheduleOnRN(setLrcVisible, false);
   };
@@ -102,53 +106,43 @@ export default function MiniplayerView() {
 
   const onArtworkPress = () => {
     if (artworkOpacity.value === 1) {
-      artworkOpacity.value = withTiming(0, { duration: 100 }, () => {
+      artworkOpacity.value = withTiming(0, { duration: 160 }, () => {
         scheduleOnRN(setLrcVisible, true);
       });
       return;
     }
     if (artworkOpacity.value === 0) {
       setLrcVisible(false);
-      artworkOpacity.value = withTiming(1, { duration: 100 });
-      return;
+      artworkOpacity.value = withTiming(1, { duration: 160 });
     }
   };
 
   const snapPlayerHeight = (translationY: number) => {
     'worklet';
-    if (miniplayerHeight.value < MinPlayerHeight * 0.7) {
-      return hide();
-    }
-    if (translationY > height * SnapToRatio) {
-      return collapse();
-    }
-    if (translationY < -height * SnapToRatio) {
-      return expand();
-    }
-    miniplayerHeight.value = withTiming(initHeight.value, {
-      duration: 250,
-    });
-    return;
+    if (miniplayerHeight.value < MinPlayerHeight * 0.7) return hide();
+    if (translationY > height * SnapToRatio) return collapse();
+    if (translationY < -height * SnapToRatio) return expand();
+
+    const midpoint = height * 0.52;
+    return miniplayerHeight.value > midpoint ? expand() : collapse();
   };
 
   const scrollDragGesture = React.useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetY([-5, 5])
+        .activeOffsetY([-6, 6])
         .onStart(() => (initHeight.value = miniplayerHeight.value))
         .onChange(e => dragPlayerHeight(e.translationY))
         .onEnd(e => snapPlayerHeight(e.translationY)),
-    [],
+    [height],
   );
 
   const disabledGesture = React.useMemo(() => Gesture.Manual(), []);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      height: miniplayerHeight.value,
-      opacity: Math.min(1, miniplayerHeight.value / MinPlayerHeight),
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: miniplayerHeight.value,
+    opacity: Math.min(1, miniplayerHeight.value / MinPlayerHeight),
+  }));
 
   useEffect(() => {
     expand();
@@ -160,13 +154,13 @@ export default function MiniplayerView() {
 
   useEffect(() => {
     useNoxSetting.setState({ collapse, expand });
-  }, []);
+  }, [height]);
 
   return (
     <GestureDetector
       gesture={lrcVisible || sliding ? disabledGesture : scrollDragGesture}
     >
-      <Animated.View style={[{ width: '100%' }, animatedStyle]}>
+      <Animated.View style={[mStyles.player, animatedStyle]}>
         <View style={styles.rowView}>
           <PlayerTopInfo opacity={opacityVisible} collapse={collapse} />
           <TrackAlbumArt
@@ -174,6 +168,9 @@ export default function MiniplayerView() {
             opacity={artworkOpacity}
             onPress={onArtworkPress}
             expand={expand}
+            expandedSize={metrics.artworkSize}
+            expandedTop={metrics.artworkTop}
+            expandedRadius={metrics.cornerRadius}
           />
           <MiniControls miniplayerHeight={miniplayerHeight} expand={expand} />
         </View>
@@ -183,17 +180,33 @@ export default function MiniplayerView() {
           opacity={lrcOpacity}
           onPress={onArtworkPress}
         />
-        <View style={{ height: insets.top }} />
         <TrackInfo
           opacity={opacityVisible}
           artworkOpacity={artworkOpacity}
-          style={{ width: '100%', top: width + 33 }}
+          style={{
+            width: '100%',
+            position: 'absolute',
+            top: metrics.metadataTop,
+            paddingHorizontal: metrics.horizontalPadding,
+          }}
         />
         <PlayerControls
           opacity={opacityVisible}
-          style={{ width: '100%', top: width + 28 }}
+          style={{
+            width: '100%',
+            position: 'absolute',
+            top: metrics.controlsTop,
+            paddingHorizontal: metrics.horizontalPadding,
+          }}
         />
       </Animated.View>
     </GestureDetector>
   );
 }
+
+const mStyles = {
+  player: {
+    width: '100%' as const,
+    overflow: 'hidden' as const,
+  },
+};
