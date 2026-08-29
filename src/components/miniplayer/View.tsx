@@ -54,8 +54,8 @@ export default function MiniplayerView() {
     if (miniplayerHeight.value <= revealStart) return 0;
     return Math.min(
       1,
-      (miniplayerHeight.value - revealStart) /
-        Math.max(1, height - revealStart) *
+      ((miniplayerHeight.value - revealStart) /
+        Math.max(1, height - revealStart)) *
         2.2,
     );
   }, [height, metrics.artworkSize, metrics.artworkTop]);
