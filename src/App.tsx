@@ -78,7 +78,9 @@ export default function App(appProps: NoxComponent.AppProps) {
   if (!isPlayerReady) {
     return (
       <SafeAreaProvider>
-        <View style={[styles.launchContainer, { backgroundColor: appBackground }]} />
+        <View
+          style={[styles.launchContainer, { backgroundColor: appBackground }]}
+        />
       </SafeAreaProvider>
     );
   }
