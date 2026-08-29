@@ -33,10 +33,7 @@ const TrackInfo = () => {
       <Text
         testID={'miniplayer-track-title'}
         numberOfLines={1}
-        style={[
-          mStyles.title,
-          { color: playerStyle.colors.onSurface },
-        ]}
+        style={[mStyles.title, { color: playerStyle.colors.onSurface }]}
       >
         {track?.title}
       </Text>
