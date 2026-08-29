@@ -40,10 +40,7 @@ const TrackInfo = () => {
       <Text
         testID={'miniplayer-track-artist'}
         numberOfLines={1}
-        style={[
-          mStyles.artist,
-          { color: playerStyle.colors.onSurfaceVariant },
-        ]}
+        style={[mStyles.artist, { color: playerStyle.colors.onSurfaceVariant }]}
       >
         {track?.artist}
       </Text>
