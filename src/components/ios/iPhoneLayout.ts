@@ -6,7 +6,7 @@ export interface IPhonePlayerMetricsInput {
 }
 
 /**
- * Shared iPhone-first layout metrics.
+ * Shared iPhone-first layout metrics used by the redesigned player surfaces.
  *
  * The legacy player positioned most of the expanded UI using the raw screen
  * width. On tall iPhones that made the album art edge-to-edge and pushed the
