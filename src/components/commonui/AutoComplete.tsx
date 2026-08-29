@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useNoxSetting } from '@stores/useApp';
 import { styles as stylesGlobal } from '../style';
+import { isIOS } from '@utils/RNUtils';
+
 interface Props {
   placeholder: string;
   value: string;
@@ -62,11 +64,9 @@ export default function AutoComplete({
     }
     const newId = uuidv4();
     autoCompleteId.current = newId;
-    resolveData?.(debouncedValue).then(data => {
-      if (autoCompleteId.current !== newId) {
-        return;
-      }
-      setData(data);
+    resolveData?.(debouncedValue).then(nextData => {
+      if (autoCompleteId.current !== newId) return;
+      setData(nextData);
     });
     setShowAutoComplete(true);
   }, [debouncedValue]);
@@ -84,15 +84,22 @@ export default function AutoComplete({
       'hardwareBackPress',
       onBackPress,
     );
-
     return () => subscription.remove();
   }, [showAutoComplete]);
+
+  const searchSurface =
+    playerStyle.colors.elevation?.level2 ??
+    playerStyle.colors.surfaceVariant ??
+    playerStyle.colors.background;
 
   return (
     <View style={styles.container}>
       <Searchbar
         testID={testID}
-        inputStyle={stylesGlobal.nativeInput}
+        inputStyle={[
+          stylesGlobal.nativeInput,
+          isIOS ? styles.inputIOS : undefined,
+        ]}
         onLayout={e =>
           setMenuCoords({
             x: e.nativeEvent.layout.x,
@@ -106,9 +113,12 @@ export default function AutoComplete({
         value={value}
         onChangeText={setValue}
         onSubmitEditing={() => onSubmit(value)}
-        // HACK: with new arch this selects all when entering the first char
-        // selectTextOnFocus
-        style={styles.input}
+        style={[
+          styles.input,
+          isIOS && styles.searchbarIOS,
+          { backgroundColor: searchSurface },
+        ]}
+        elevation={0}
         selectionColor={playerStyle.customColors.textInputSelectionColor}
         onIconPress={onIconPress}
         icon={icon}
@@ -116,8 +126,8 @@ export default function AutoComplete({
         onFocus={onFocus}
         theme={{
           colors: {
-            onSurfaceVariant: playerStyle.colors.onSurface,
-            onSurface: playerStyle.colors.onSurfaceVariant,
+            onSurfaceVariant: playerStyle.colors.onSurfaceVariant,
+            onSurface: playerStyle.colors.onSurface,
           },
         }}
       />
@@ -146,8 +156,22 @@ export default function AutoComplete({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row' },
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+  },
   input: {
     flex: 1,
+  },
+  searchbarIOS: {
+    height: 44,
+    minHeight: 44,
+    borderRadius: 14,
+  },
+  inputIOS: {
+    minHeight: 44,
+    height: 44,
+    fontSize: 16,
+    lineHeight: 20,
   },
 });
