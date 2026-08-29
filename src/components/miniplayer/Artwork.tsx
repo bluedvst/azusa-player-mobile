@@ -1,5 +1,6 @@
-import { TouchableWithoutFeedback, Dimensions } from 'react-native';
+import { TouchableWithoutFeedback, useWindowDimensions } from 'react-native';
 import Animated, {
+  Extrapolation,
   interpolate,
   SharedValue,
   useAnimatedStyle,
@@ -7,7 +8,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useEffect, useState } from 'react';
 import { Image, useImage } from 'expo-image';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTrackStore } from '@hooks/useActiveTrack';
 import { MinPlayerHeight } from './Constants';
@@ -23,6 +23,9 @@ interface Props extends NoxComponent.MiniplayerProps {
   opacity: SharedValue<number>;
   onPress: () => void;
   expand: () => void;
+  expandedSize: number;
+  expandedTop: number;
+  expandedRadius: number;
 }
 
 export default function MiniplayerArtwork({
@@ -30,13 +33,15 @@ export default function MiniplayerArtwork({
   opacity,
   onPress,
   expand,
+  expandedSize,
+  expandedTop,
+  expandedRadius,
 }: Props) {
   const track = useTrackStore(s => s.track);
   const [trackCarousel, setTrackCarousel] = useState<any[]>([]);
   const playerSetting = useNoxSetting(state => state.playerSetting);
   const [overwriteAlbumArt, setOverwriteAlbumArt] = useState<string | void>();
-  const { width } = Dimensions.get('window');
-  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
 
   const imgURI = playerSetting.hideCoverInMobile
     ? ''
@@ -50,78 +55,67 @@ export default function MiniplayerArtwork({
       logger.warn(`[artwork] failed to load ${track?.mediaId} artwork`),
   });
 
-  const artworkWidth = useDerivedValue(() => {
-    return Math.min(
-      Math.max(miniplayerHeight.value, MinPlayerHeight) - 15,
-      width,
-    );
-  });
+  const miniSize = Math.max(44, MinPlayerHeight - 12);
+  const expandedLeft = (width - expandedSize) / 2;
+
+  const expansionProgress = useDerivedValue(() =>
+    interpolate(
+      miniplayerHeight.value,
+      [MinPlayerHeight, height],
+      [0, 1],
+      Extrapolation.CLAMP,
+    ),
+  );
 
   const artworkOpacity = useDerivedValue(() => {
     if (!track?.song?.MVHide || !track?.song?.backgroundOverride) {
       return opacity.value;
     }
     return interpolate(
-      artworkWidth.value,
-      [MinPlayerHeight - 15, width],
+      expansionProgress.value,
+      [0, 1],
       [opacity.value, 0],
+      Extrapolation.CLAMP,
     );
   });
 
-  const artworkScale = useDerivedValue(() => {
-    return artworkWidth.value / width;
-  });
-
-  const expandDiff = useDerivedValue(
-    () => miniplayerHeight.value - MinPlayerHeight,
-  );
-
-  const borderRadius = useDerivedValue(() => {
-    /**
-    round until miniplayerHeight > width:
-    if (miniplayerHeight.value < width) return 40;
-    return Math.max(0, 40 - (miniplayerHeight.value - width) / 4);
-     */
-    return interpolate(
-      width + MinPlayerHeight - miniplayerHeight.value,
-      [0, width],
-      [0, 30],
-    );
-  });
-
-  const artworkTranslateY = useDerivedValue(() => {
-    return Math.min(
-      95,
-      32 + (Math.max(0, expandDiff.value) - width - insets.top * 3) / 2,
-    );
-  });
-  const artworkTranslateX = useDerivedValue(() => {
-    const halfTranslation = (artworkWidth.value - width) / 2;
-    if (expandDiff.value < 6) {
-      return 5 - Math.max(0, expandDiff.value) + halfTranslation;
-    }
-    return halfTranslation;
-  });
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { translateX: artworkTranslateX.value },
-        { translateY: artworkTranslateY.value },
-        { scale: artworkScale.value },
-      ],
-      opacity: artworkOpacity.value,
-      borderRadius: borderRadius.value,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: interpolate(
+      expansionProgress.value,
+      [0, 1],
+      [miniSize, expandedSize],
+      Extrapolation.CLAMP,
+    ),
+    height: interpolate(
+      expansionProgress.value,
+      [0, 1],
+      [miniSize, expandedSize],
+      Extrapolation.CLAMP,
+    ),
+    left: interpolate(
+      expansionProgress.value,
+      [0, 1],
+      [6, expandedLeft],
+      Extrapolation.CLAMP,
+    ),
+    top: interpolate(
+      expansionProgress.value,
+      [0, 1],
+      [6, expandedTop],
+      Extrapolation.CLAMP,
+    ),
+    opacity: artworkOpacity.value,
+    borderRadius: interpolate(
+      expansionProgress.value,
+      [0, 1],
+      [14, expandedRadius],
+      Extrapolation.CLAMP,
+    ),
+  }));
 
   const onImagePress = () => {
-    if (miniplayerHeight.value === MinPlayerHeight) {
-      return expand();
-    }
-    if (artworkScale.value === 1) {
-      return onPress();
-    }
+    if (miniplayerHeight.value < height * 0.8) return expand();
+    onPress();
   };
 
   const refreshImageCarousel = () =>
@@ -141,24 +135,12 @@ export default function MiniplayerArtwork({
 
   return (
     <TouchableWithoutFeedback onPress={onImagePress}>
-      <Animated.View
-        style={[
-          {
-            width,
-            marginTop: insets.top,
-            height: width + insets.top,
-            position: 'absolute',
-            overflow: 'hidden',
-            zIndex: 1,
-          },
-          animatedStyle,
-        ]}
-      >
+      <Animated.View style={[mStyles.artworkShell, animatedStyle]}>
         {playerSetting.artworkCarousel ? (
           <HorizontalCarousel
             images={trackCarousel}
-            imgStyle={{ width, height: width }}
-            paddingVertical={100}
+            imgStyle={{ width: expandedSize, height: expandedSize }}
+            paddingVertical={0}
             callback={i =>
               i === -1 ? performSkipToNext() : performSkipToPrevious()
             }
@@ -166,10 +148,27 @@ export default function MiniplayerArtwork({
           />
         ) : (
           !playerSetting.hideCoverInMobile && (
-            <Image style={styles.flex} source={img} transition={500} />
+            <Image
+              style={styles.flex}
+              source={img}
+              transition={220}
+              contentFit="cover"
+            />
           )
         )}
       </Animated.View>
     </TouchableWithoutFeedback>
   );
 }
+
+const mStyles = {
+  artworkShell: {
+    position: 'absolute' as const,
+    overflow: 'hidden' as const,
+    zIndex: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+  },
+};
