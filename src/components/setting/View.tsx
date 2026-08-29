@@ -55,10 +55,17 @@ const HomeSettings = ({ navigation }: Props) => {
     <View
       style={[
         styles.homeSettingsContainer,
-        { backgroundColor: playerStyle.customColors.maskedBackgroundColor },
+        {
+          backgroundColor: isIOS
+            ? playerStyle.colors.background
+            : playerStyle.customColors.maskedBackgroundColor,
+        },
       ]}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={isIOS ? styles.scrollContentIOS : undefined}
+      >
         <SettingListItem
           icon={NoxView.HOME}
           settingName="GeneralSetting"
@@ -122,12 +129,14 @@ const HomeSettings = ({ navigation }: Props) => {
           onPress={() => navigation.navigate(NoxView.PREMIUM)}
           settingCategory="Settings"
         />
-        <SettingListItem
-          icon={NoxView.SPLASH_GALLARY}
-          settingName="SplashSetting"
-          onPress={() => navigation.navigate(NoxView.SPLASH_GALLARY)}
-          settingCategory="Settings"
-        />
+        {!isIOS && (
+          <SettingListItem
+            icon={NoxView.SPLASH_GALLARY}
+            settingName="SplashSetting"
+            onPress={() => navigation.navigate(NoxView.SPLASH_GALLARY)}
+            settingCategory="Settings"
+          />
+        )}
         <SettingListItem
           icon={NoxView.INFO}
           settingName="InfoSetting"
@@ -146,7 +155,12 @@ const Settings = ({ headerBackVisible = true }: Props) => {
     <FlexView noFlex mkey={'setting'}>
       <View style={styles.homeSettingsContainer}>
         <InsetsTopPadding />
-        <Stack.Navigator screenOptions={{ headerBackVisible }}>
+        <Stack.Navigator
+          screenOptions={{
+            headerBackVisible,
+            headerShadowVisible: !isIOS,
+          }}
+        >
           <Stack.Screen
             name={NoxView.HOME}
             component={HomeSettings}
@@ -270,8 +284,8 @@ const styles = StyleSheet.create({
   homeSettingsContainer: {
     flex: 1,
   },
-  menuButton: {
-    width: 55,
-    marginLeft: -5,
+  scrollContentIOS: {
+    paddingTop: 8,
+    paddingBottom: 28,
   },
 });
