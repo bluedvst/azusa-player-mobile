@@ -47,10 +47,7 @@ export default function LandscapePlaylistPanel({ panelWidth }: Props) {
           {() => <LandscapeLyricView panelStyle={panelStyle} />}
         </Stack.Screen>
         <Stack.Screen name={NoxRoutes.Playlist} component={Playlist} />
-        <Stack.Screen
-          name={NoxRoutes.PlaylistsDrawer}
-          component={Playlists}
-        />
+        <Stack.Screen name={NoxRoutes.PlaylistsDrawer} component={Playlists} />
         <Stack.Screen name={NoxRoutes.Explore} component={Explore} />
         <Stack.Screen name={NoxRoutes.Settings} component={Settings} />
       </Stack.Navigator>

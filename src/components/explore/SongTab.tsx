@@ -60,9 +60,7 @@ export const BiliSongCard = ({
         {
           width: cardWidth,
           height: cardHeight,
-          backgroundColor: isIOS
-            ? playerStyle.colors.surface
-            : 'transparent',
+          backgroundColor: isIOS ? playerStyle.colors.surface : 'transparent',
         },
       ]}
     >
@@ -112,7 +110,10 @@ export const BiliSongCard = ({
             />
             <View style={style.songMeta}>
               <Text
-                style={[style.songTitle, { color: playerStyle.colors.onSurface }]}
+                style={[
+                  style.songTitle,
+                  { color: playerStyle.colors.onSurface },
+                ]}
                 numberOfLines={1}
               >
                 {item.name}

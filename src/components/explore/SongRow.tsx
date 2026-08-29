@@ -45,7 +45,10 @@ export const BiliSongRow = ({
         <Text
           style={[
             styles.sectionTitle,
-            { color: playerStyle.colors.onBackground, paddingHorizontal: horizontalPadding },
+            {
+              color: playerStyle.colors.onBackground,
+              paddingHorizontal: horizontalPadding,
+            },
           ]}
           numberOfLines={1}
         >
@@ -88,7 +91,10 @@ export const BiliSongRow = ({
             />
             <View style={styles.meta}>
               <Text
-                style={[styles.title, { color: playerStyle.colors.onBackground }]}
+                style={[
+                  styles.title,
+                  { color: playerStyle.colors.onBackground },
+                ]}
                 numberOfLines={2}
               >
                 {item.name}
@@ -143,7 +149,10 @@ export const YTSongRow = ({ playlists = [], title }: YTSongRowProp) => {
         <Text
           style={[
             styles.sectionTitle,
-            { color: playerStyle.colors.onBackground, paddingHorizontal: horizontalPadding },
+            {
+              color: playerStyle.colors.onBackground,
+              paddingHorizontal: horizontalPadding,
+            },
           ]}
           numberOfLines={1}
         >
@@ -177,7 +186,10 @@ export const YTSongRow = ({ playlists = [], title }: YTSongRowProp) => {
             />
             <View style={styles.meta}>
               <Text
-                style={[styles.title, { color: playerStyle.colors.onBackground }]}
+                style={[
+                  styles.title,
+                  { color: playerStyle.colors.onBackground },
+                ]}
                 numberOfLines={item.singer ? 1 : 2}
               >
                 {item.name}

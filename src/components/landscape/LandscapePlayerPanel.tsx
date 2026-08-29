@@ -28,10 +28,7 @@ export default function LandscapePlayerPanel({ panelWidth }: Props) {
       <TrackInfoTemplate
         track={track}
         windowWidth={panelWidth}
-        containerStyle={[
-          styles.trackInfo,
-          isIOS && styles.trackInfoIOS,
-        ]}
+        containerStyle={[styles.trackInfo, isIOS && styles.trackInfoIOS]}
       >
         <></>
       </TrackInfoTemplate>

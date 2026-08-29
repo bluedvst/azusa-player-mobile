@@ -17,9 +17,7 @@ const AzusaPlayer = () => {
 
   const horizontalSafeArea = insets.left + insets.right;
   const usableWidth = Math.max(0, width - horizontalSafeArea);
-  const actionPanelWidth = isIOS
-    ? 62
-    : Math.max(50, Math.min(120, height / 5));
+  const actionPanelWidth = isIOS ? 62 : Math.max(50, Math.min(120, height / 5));
   const contentWidth = Math.max(0, usableWidth - actionPanelWidth);
   const playerPanelWidth = isIOS
     ? Math.min(390, Math.max(280, contentWidth * 0.47))

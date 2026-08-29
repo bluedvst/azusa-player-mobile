@@ -124,9 +124,7 @@ export default function PlaylistsView({
         ]}
       >
         <View style={{ height: (isIOS ? 6 : 10) + insets.top }} />
-        <BiliCard
-          backgroundURI={isIOS ? undefined : playerStyle.biliGarbCard}
-        >
+        <BiliCard backgroundURI={isIOS ? undefined : playerStyle.biliGarbCard}>
           <RenderDrawerItem
             icon={'home-outline'}
             view={NoxRoutes.PlayerHome}

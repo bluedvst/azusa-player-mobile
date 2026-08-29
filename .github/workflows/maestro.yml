@@ -34,7 +34,15 @@ jobs:
           python ./scripts/dev_cleartext.py
           python ./scripts/release_bump.py --dev
 
-      - name: Build Android
+      - name: Build Android for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Build Android release
+        if: github.event_name != 'pull_request'
         uses: ./.github/composite-actions/build-apk
         with:
           signpwd: ${{ secrets.RELEASE_SIGN_PWD }}
@@ -44,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: APM-APK
-          path: ./android/app/build/outputs/apk/release/*.apk
+          path: ./android/app/build/outputs/apk/**/*.apk
 
   e2e:
     name: e2e maestro
@@ -88,7 +96,7 @@ jobs:
           target: default
           cores: 4
           profile: pixel_7
-          script: adb install ./artifacts/app-x86_64-release.apk && maestro test ./__tests__/maestro/tests/
+          script: APK=$(find ./artifacts -name '*.apk' | head -n 1) && test -n "$APK" && adb install "$APK" && maestro test ./__tests__/maestro/tests/
 
       - name: Upload Maestro Results
         uses: actions/upload-artifact@v7
