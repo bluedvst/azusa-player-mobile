@@ -28,6 +28,7 @@ import {
 } from './components/styles/Theme';
 import APMContext from './contexts/APMContext';
 import HookEmptyComponent from './HookEmptyComponent';
+import { isIOS } from '@utils/RNUtils';
 
 if (TRACKING) {
   Sentry.init({
@@ -61,6 +62,8 @@ export default function App(appProps: NoxComponent.AppProps) {
   const defaultNavTheme = playerStyle.metaData.darkTheme
     ? NavigationDarkTheme
     : NavigationDefaultTheme;
+  const iosSurface = playerStyle.metaData.darkTheme ? '#000000' : '#F7F7FA';
+  const appBackground = isIOS ? iosSurface : playerStyle.colors.background;
 
   useEffect(() => {
     function deepLinkHandler(data: { url: string }) {
@@ -72,16 +75,13 @@ export default function App(appProps: NoxComponent.AppProps) {
     return () => subscription.remove();
   }, [setInitialURL]);
 
-  // The former splash component could randomly start a remote promotional video and
-  // imposed an artificial delay on every cold launch. iPhone builds now transition
-  // directly into the app as soon as the audio engine is ready.
   if (!isPlayerReady) {
     return (
       <SafeAreaProvider>
         <View
           style={[
             styles.launchContainer,
-            { backgroundColor: playerStyle.colors.background },
+            { backgroundColor: appBackground },
           ]}
         />
       </SafeAreaProvider>
@@ -93,10 +93,8 @@ export default function App(appProps: NoxComponent.AppProps) {
       <HookEmptyComponent />
       <SafeAreaProvider>
         <APMContext>
-          <MainBackground />
-          <View
-            style={{ backgroundColor: playerStyle.colors.background, flex: 1 }}
-          >
+          {!isIOS && <MainBackground />}
+          <View style={{ backgroundColor: appBackground, flex: 1 }}>
             <PaperProvider
               theme={{
                 ...defaultTheme,
