@@ -18,23 +18,15 @@ const ProgressText = () => {
 
   const progressTextStyle = [
     styles.labelText,
-    {
-      color: playerStyle.metaData.darkTheme
-        ? 'white'
-        : playerStyle.colors.primary,
-    },
+    { color: playerStyle.colors.onSurfaceVariant },
   ];
 
   useEffect(() => {
-    if (!miniProgressSliding) {
-      setShowDragValue(false);
-    }
+    if (!miniProgressSliding) setShowDragValue(false);
   }, [miniProgressSliding]);
 
   useEffect(() => {
-    if (debouncedSliding) {
-      setShowDragValue(true);
-    }
+    if (debouncedSliding) setShowDragValue(true);
   }, [debouncedSliding]);
 
   return (
@@ -72,32 +64,30 @@ export const Progress = ({ live }: { live?: boolean }) => {
 const styles = StyleSheet.create({
   liveContainer: {
     alignItems: 'center',
-    flexDirection: 'row',
-    paddingBottom: 28,
+    justifyContent: 'center',
+    minHeight: 44,
   },
   liveText: {
-    color: 'white',
     alignSelf: 'center',
-    fontSize: 18,
+    fontSize: 15,
+    fontWeight: '600',
   },
   container: {
     width: '100%',
     zIndex: 0,
-  },
-  progressContainer: {
-    width: '100%',
-    // for android native bar, set this to 0
-    paddingHorizontal: 25,
-    marginTop: -22,
+    paddingTop: 2,
   },
   labelContainer: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
+    marginTop: -2,
   },
   labelText: {
-    color: 'white',
+    fontSize: 11.5,
+    lineHeight: 16,
+    fontWeight: '500',
     fontVariant: ['tabular-nums'],
   },
 });
