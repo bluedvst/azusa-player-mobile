@@ -33,7 +33,9 @@ export default function MiniplayerTrackInfo({
   );
 
   const playlistSongIndex = track?.song
-    ? currentPlayingList.songList.findIndex(song => song.id === track.song.id) + 1
+    ? currentPlayingList.songList.findIndex(
+        song => song.id === track.song.id,
+      ) + 1
     : 0;
   const queuePosition = currentPlayingIndex + 1;
   const queueLength = currentPlayingList.songList.length;
@@ -52,10 +54,7 @@ export default function MiniplayerTrackInfo({
       <View style={mStyles.primaryRow}>
         <View style={mStyles.textColumn}>
           <SongTitle
-            style={[
-              mStyles.title,
-              { color: playerStyle.colors.onSurface },
-            ]}
+            style={[mStyles.title, { color: playerStyle.colors.onSurface }]}
             text={track?.title}
             bouncePadding={BouncePadding}
           />
