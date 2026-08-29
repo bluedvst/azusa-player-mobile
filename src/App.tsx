@@ -10,7 +10,6 @@ import {
   DefaultTheme as NavigationDefaultTheme,
 } from '@react-navigation/native';
 
-import AppOpenSplash from './components/background/AppOpenSplash';
 import useSetupPlayer from './hooks/useSetupPlayer';
 import { useIsLandscape } from './hooks/useOrientation';
 import appStore from '@stores/appStore';
@@ -42,33 +41,16 @@ if (TRACKING) {
       'no audio url',
       'com.google.android.play.core.appupdate.internal.zzy',
       'TEST - Sentry Client Crash',
-      // its ok to not track muse error i think
       /MuseError/,
     ],
   });
 }
 
-const useSplash = (duration = 1000) => {
-  const [isReady, setIsReady] = React.useState(false);
-  useEffect(() => {
-    // wait for 1000 ms and set isReady to true
-    setTimeout(() => {
-      setIsReady(true);
-    }, duration);
-  });
-  return isReady;
-};
-
 export default function App(appProps: NoxComponent.AppProps) {
   const { vip } = useSetupVIP();
-  const isSplashReady = useSplash(
-    __DEV__ || appProps.intentData || vip ? 1 : 2500,
-  );
-  const [isSplashAnimReady, setIsSplashAnimReady] = React.useState(vip);
   const isPlayerReady = useSetupPlayer({ ...appProps, vip });
   const isLandscape = useIsLandscape();
   const PIPMode = useStore(appStore, state => state.pipMode);
-  const initialURL = useNoxSetting(state => state.initialURL);
   const setInitialURL = useNoxSetting(state => state.setInitialURL);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const usedTheme = useTheme();
@@ -85,25 +67,27 @@ export default function App(appProps: NoxComponent.AppProps) {
       console.log('deepLinkHandler', data.url);
     }
 
-    // This event will be fired when the app is already open and the notification is clicked
     const subscription = Linking.addEventListener('url', deepLinkHandler);
-
-    // When you launch the closed app from the notification or any other link
     Linking.getInitialURL().then(url => url && setInitialURL(url));
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+    return () => subscription.remove();
+  }, [setInitialURL]);
 
-  if (!(isPlayerReady && (initialURL || isSplashReady) && isSplashAnimReady)) {
+  // The former splash component could randomly start a remote promotional video and
+  // imposed an artificial delay on every cold launch. iPhone builds now transition
+  // directly into the app as soon as the audio engine is ready.
+  if (!isPlayerReady) {
     return (
       <SafeAreaProvider>
-        <View style={styles.screenContainer}>
-          <AppOpenSplash setIsSplashReady={setIsSplashAnimReady} />
-        </View>
+        <View
+          style={[
+            styles.launchContainer,
+            { backgroundColor: playerStyle.colors.background },
+          ]}
+        />
       </SafeAreaProvider>
     );
   }
+
   return (
     <GestureHandlerRootView style={styles.gestureContainer}>
       <HookEmptyComponent />
@@ -136,10 +120,8 @@ export default function App(appProps: NoxComponent.AppProps) {
 }
 
 const styles = StyleSheet.create({
-  screenContainer: {
+  launchContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   gestureContainer: {
     flex: 1,
