@@ -1,11 +1,13 @@
 import { IconButton } from 'react-native-paper';
 import {
-  Dimensions,
   StyleSheet,
   TouchableWithoutFeedback,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, {
+  Extrapolation,
+  interpolate,
   useAnimatedStyle,
   useDerivedValue,
 } from 'react-native-reanimated';
@@ -13,7 +15,6 @@ import Animated, {
 import { fadePause } from '@utils/RNTPUtils';
 import useTPControls from '@hooks/useTPControls';
 import usePlaybackState from '@hooks/usePlaybackState';
-import { styles } from '../style';
 import { useTrackStore } from '@hooks/useActiveTrack';
 import { MinPlayerHeight } from './Constants';
 import { useNoxSetting } from '@stores/useApp';
@@ -21,26 +22,31 @@ import { PaperText as Text } from '@components/commonui/ScaledText';
 import { TPPlay } from '@stores/RNObserverStore';
 import ActivityIndicator from '@components/commonui/ActivityIndicator';
 
-const IconSize = 30;
-const DoublePlayerHeight = MinPlayerHeight * 1.2;
+const IconSize = 25;
 
 const TrackInfo = () => {
   const track = useTrackStore(s => s.track);
   const playerStyle = useNoxSetting(state => state.playerStyle);
 
   return (
-    <View style={[styles.centeredFlex, mStyles.infoContainer]}>
+    <View style={mStyles.infoContainer}>
       <Text
         testID={'miniplayer-track-title'}
-        numberOfLines={2}
-        style={{ color: playerStyle.colors.onSurface }}
+        numberOfLines={1}
+        style={[
+          mStyles.title,
+          { color: playerStyle.colors.onSurface },
+        ]}
       >
         {track?.title}
       </Text>
       <Text
         testID={'miniplayer-track-artist'}
         numberOfLines={1}
-        style={{ color: playerStyle.colors.onSurfaceVariant }}
+        style={[
+          mStyles.artist,
+          { color: playerStyle.colors.onSurfaceVariant },
+        ]}
       >
         {track?.artist}
       </Text>
@@ -51,49 +57,48 @@ const TrackInfo = () => {
 interface Props extends NoxComponent.MiniplayerProps {
   expand: () => void;
 }
+
 export default function MiniplayerControls({
   miniplayerHeight,
   expand,
 }: Props) {
   const { performSkipToNext, performSkipToPrevious } = useTPControls();
-  const PlayerHeight = Dimensions.get('window').height - MinPlayerHeight;
+  const { width } = useWindowDimensions();
   const playerStyle = useNoxSetting(state => state.playerStyle);
-  const HalfScreenHeight = PlayerHeight * 0.5;
+  const compact = width <= 375;
 
-  const miniControlOpacity = useDerivedValue(() => {
-    if (miniplayerHeight.value > HalfScreenHeight + miniplayerHeight.value) {
-      return 0;
-    }
-    if (miniplayerHeight.value < DoublePlayerHeight) {
-      return 1;
-    }
-    return (
-      (HalfScreenHeight + DoublePlayerHeight - miniplayerHeight.value) /
-      HalfScreenHeight
-    );
-  });
+  const miniControlOpacity = useDerivedValue(() =>
+    interpolate(
+      miniplayerHeight.value,
+      [MinPlayerHeight, MinPlayerHeight * 2.25],
+      [1, 0],
+      Extrapolation.CLAMP,
+    ),
+  );
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: miniControlOpacity.value,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: miniControlOpacity.value,
+  }));
 
   return (
     <TouchableWithoutFeedback onPress={expand}>
-      <Animated.View style={[styles.rowView, styles.flex, animatedStyle]}>
+      <Animated.View style={[mStyles.container, animatedStyle]}>
         <TrackInfo />
-        <IconButton
-          iconColor={playerStyle.colors.primary}
-          icon="skip-previous"
-          size={IconSize}
-          onPress={performSkipToPrevious}
-        />
+        {!compact && (
+          <IconButton
+            iconColor={playerStyle.colors.primary}
+            icon="skip-previous"
+            size={IconSize}
+            style={mStyles.iconButton}
+            onPress={performSkipToPrevious}
+          />
+        )}
         <PlayPauseButton />
         <IconButton
           iconColor={playerStyle.colors.primary}
           icon="skip-next"
           size={IconSize}
+          style={mStyles.iconButton}
           onPress={() => performSkipToNext()}
         />
       </Animated.View>
@@ -106,24 +111,50 @@ const PlayPauseButton = () => {
   const { showPause, showBuffering } = usePlaybackState();
 
   if (showBuffering) {
-    return (
-      <ActivityIndicator size={IconSize - 8} style={mStyles.iconContainer} />
-    );
+    return <ActivityIndicator size={21} style={mStyles.iconButton} />;
   }
+
   return (
     <IconButton
       iconColor={playerStyle.colors.primary}
       icon={showPause ? 'pause' : 'play'}
-      size={IconSize}
+      size={IconSize + 2}
+      style={mStyles.iconButton}
       onPress={showPause ? fadePause : TPPlay}
     />
   );
 };
 
 const mStyles = StyleSheet.create({
-  iconContainer: {
-    width: IconSize + 28,
-    height: IconSize + 28,
+  container: {
+    width: '100%',
+    height: MinPlayerHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 4,
   },
-  infoContainer: { paddingLeft: MinPlayerHeight, height: MinPlayerHeight },
+  infoContainer: {
+    flex: 1,
+    height: MinPlayerHeight,
+    justifyContent: 'center',
+    paddingLeft: MinPlayerHeight + 4,
+    paddingRight: 6,
+  },
+  title: {
+    fontSize: 14.5,
+    lineHeight: 19,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+  },
+  artist: {
+    marginTop: 1,
+    fontSize: 12.5,
+    lineHeight: 16,
+    fontWeight: '400',
+  },
+  iconButton: {
+    width: 42,
+    height: MinPlayerHeight,
+    margin: 0,
+  },
 });
