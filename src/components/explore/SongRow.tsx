@@ -57,7 +57,7 @@ export const BiliSongRow = ({
         data={songs}
         horizontal
         contentContainerStyle={{ paddingHorizontal: horizontalPadding, gap }}
-        keyExtractor={(item, index) => `${item.id ?? item.bvid ?? item.name}-${index}`}
+        keyExtractor={(item, index) => `${item.id ?? item.name}-${index}`}
         renderItem={({ item }) => (
           <TouchableOpacity
             activeOpacity={0.78}
